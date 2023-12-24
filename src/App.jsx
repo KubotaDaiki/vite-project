@@ -10,6 +10,12 @@ import { Menu, MenuItem, Sidebar, SubMenu } from "react-pro-sidebar";
 import "./App.css";
 import { listTodos } from "./graphql/queries";
 import { Sample } from "./ui-components";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import { Snackbar, Alert } from "@mui/material";
 
 const client = generateClient();
 
@@ -17,6 +23,8 @@ function App() {
   const [collapsed, setCollapsed] = useState(window.innerWidth < 800);
   const [values, setValues] = useState([]);
   const [targetValue, setTargetValue] = useState({});
+  const [open, setOpen] = React.useState(false);
+  const [snackbar, setSnackbar] = React.useState(null);
 
   const fieldItems = [
     { fieldName: "id", type: "TextField" },
@@ -186,6 +194,29 @@ function App() {
             ...generateFieldSettings(),
           }}
         ></Sample>
+        <Button onClick={() => setOpen(true)}>Sample</Button>
+        <AlertDialog
+          open={open}
+          text="データを登録します。よろしいですか？"
+          handleOK={() => {
+            setSnackbar({
+              children: "登録完了しました",
+              severity: "success",
+            });
+            setOpen(false);
+          }}
+          handleCancel={() => setOpen(false)}
+        ></AlertDialog>
+        {!!snackbar && (
+          <Snackbar
+            open
+            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+            onClose={() => setSnackbar(null)}
+            autoHideDuration={6000}
+          >
+            <Alert {...snackbar} />
+          </Snackbar>
+        )}
         <FullFeaturedCrudGrid></FullFeaturedCrudGrid>
       </main>
     </div>
@@ -301,11 +332,27 @@ function FullFeaturedCrudGrid() {
       processRowUpdate={(updatedRow, originalRow) => {
         console.log(updatedRow);
         console.log(originalRow);
-        return updatedRow
+        return updatedRow;
       }}
       onProcessRowUpdateError={(error) => console.log(error)}
       autoHeight
       sx={{ fontSize: "1rem" }}
     />
+  );
+}
+
+function AlertDialog({ open, handleOK, handleCancel, text }) {
+  return (
+    <Dialog open={open}>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-description">
+          {text}
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleOK}>OK</Button>
+        <Button onClick={handleCancel}>キャンセル</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
