@@ -5,7 +5,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import { DataGrid, GridActionsCellItem, GridRowModes } from "@mui/x-data-grid";
 import { generateClient } from "aws-amplify/api";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Menu, MenuItem, Sidebar, SubMenu } from "react-pro-sidebar";
 import "./App.css";
 import { listTodos } from "./graphql/queries";
@@ -16,14 +16,22 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import { Snackbar, Alert } from "@mui/material";
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+} from "material-react-table";
 
 const client = generateClient();
 
 function App() {
-  const [collapsed, setCollapsed] = useState(window.innerWidth < 800);
+  const initialOpenDialog = {
+    create: false,
+    update: false,
+    delete: false,
+  };
   const [values, setValues] = useState([]);
   const [targetValue, setTargetValue] = useState({});
-  const [open, setOpen] = React.useState(false);
+  const [openDialog, setOpenDialog] = React.useState(initialOpenDialog);
   const [snackbar, setSnackbar] = React.useState(null);
 
   const fieldItems = [
@@ -46,23 +54,6 @@ function App() {
       setValues(todos);
     } catch (err) {
       console.log("error fetching todos");
-    }
-  }
-
-  /**
-   * 折りたたまれたサイドバーの中身が画面サイズを超える場合のスクロールを有効化する
-   * @param {number} level 階層の深さ
-   * @returns スクロール用のCSS
-   */
-  function enableCollapsedSidebarScrollable(level) {
-    // トップレベルの要素以外にスクロール設定をすると挙動が少しおかしくなるので、level === 0としている。
-    if (level === 0 && collapsed) {
-      return {
-        overflowY: "auto",
-        maxHeight: "80vh",
-      };
-    } else {
-      return undefined;
     }
   }
 
@@ -105,239 +96,101 @@ function App() {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      <Sidebar collapsed={collapsed}>
-        <Menu
-          menuItemStyles={{
-            subMenuContent: ({ level, active, disabled }) => {
-              return {
-                width: level === 0 && collapsed ? "300px" : undefined,
-                ...enableCollapsedSidebarScrollable(level),
-              };
-            },
-          }}
-        >
-          <SubMenu label="Charts">
-            <SubMenu label="Charts">
-              <MenuItem> Pie charts</MenuItem>
-              <MenuItem> Line charts</MenuItem>
-              <MenuItem> Bar charts</MenuItem>
-              <MenuItem> Pie charts</MenuItem>
-              <MenuItem> Line charts</MenuItem>
-              <MenuItem> Bar charts</MenuItem>
-              <MenuItem> Pie charts</MenuItem>
-              <MenuItem> Line charts</MenuItem>
-              <MenuItem> Bar charts</MenuItem>
-              <MenuItem> Pie charts</MenuItem>
-              <MenuItem> Line charts</MenuItem>
-              <MenuItem> Bar charts</MenuItem>
-              <MenuItem> Pie charts</MenuItem>
-              <MenuItem> Line charts</MenuItem>
-              <MenuItem> Bar charts</MenuItem>
-              <MenuItem> Pie charts</MenuItem>
-              <MenuItem> Line charts</MenuItem>
-              <MenuItem> Bar charts</MenuItem>
-              <MenuItem> Pie charts</MenuItem>
-              <MenuItem> Line charts</MenuItem>
-              <MenuItem> Bar charts</MenuItem>
-            </SubMenu>
-            <MenuItem> Pie charts</MenuItem>
-            <MenuItem> Line charts</MenuItem>
-            <MenuItem> Bar charts</MenuItem>
-            <MenuItem> Pie charts</MenuItem>
-            <MenuItem> Line charts</MenuItem>
-            <MenuItem> Bar charts</MenuItem>
-            <MenuItem> Pie charts</MenuItem>
-            <MenuItem> Line charts</MenuItem>
-            <MenuItem> Bar charts</MenuItem>
-            <MenuItem> Pie charts</MenuItem>
-            <MenuItem> Line charts</MenuItem>
-            <MenuItem> Bar charts</MenuItem>
-            <MenuItem> Pie charts</MenuItem>
-            <MenuItem> Line charts</MenuItem>
-            <MenuItem> Bar charts</MenuItem>
-            <MenuItem> Pie charts</MenuItem>
-            <MenuItem> Line charts</MenuItem>
-            <MenuItem> Bar charts</MenuItem>
-            <MenuItem> Pie charts</MenuItem>
-            <MenuItem> Line charts</MenuItem>
-            <MenuItem> Bar charts</MenuItem>
-          </SubMenu>
-          <SubMenu label="Maps">
-            <MenuItem> Google maps</MenuItem>
-            <MenuItem> Open street maps</MenuItem>
-          </SubMenu>
-          <SubMenu label="Theme">
-            <MenuItem> Dark</MenuItem>
-            <MenuItem> Light</MenuItem>
-          </SubMenu>
-        </Menu>
-      </Sidebar>
-      <main style={{ width: "100%" }}>
-        <button onClick={() => setCollapsed(!collapsed)}>Collapse</button>
-        <Autocomplete
-          label="Autocomplete"
-          options={values.map((value) => {
-            return { id: value.id, label: value.name };
-          })}
-          onSelect={(selectValue) => {
-            const target = values.find(
-              (element) => selectValue.id === element.id
-            );
-            setTargetValue(target);
-          }}
-          placeholder="Search here..."
-        />
-        <Sample
-          overrides={{
-            Sample: { width: "100%" },
-            ...generateFieldSettings(),
-          }}
-        ></Sample>
-        <Button onClick={() => setOpen(true)}>Sample</Button>
-        <AlertDialog
-          open={open}
-          text="データを登録します。よろしいですか？"
-          handleOK={() => {
-            setSnackbar({
-              children: "登録完了しました",
-              severity: "success",
-            });
-            setOpen(false);
-          }}
-          handleCancel={() => setOpen(false)}
-        ></AlertDialog>
-        {!!snackbar && (
-          <Snackbar
-            open
-            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-            onClose={() => setSnackbar(null)}
-            autoHideDuration={6000}
-          >
-            <Alert {...snackbar} />
-          </Snackbar>
-        )}
-        <FullFeaturedCrudGrid></FullFeaturedCrudGrid>
-      </main>
-    </div>
-  );
-}
-
-export default App;
-
-const initialRows = [
-  {
-    id: "1",
-    name: "aaaaf",
-    age: 25,
-  },
-  {
-    id: "2",
-    name: "aaaaf",
-    age: 36,
-  },
-  {
-    id: "3",
-    name: "aaaaf",
-    age: 19,
-  },
-  {
-    id: "4",
-    name: "aaaaf",
-    age: 28,
-  },
-  {
-    id: "5",
-    name: "aaaaf",
-    age: 23,
-  },
-];
-
-function FullFeaturedCrudGrid() {
-  const [rows, setRows] = React.useState(initialRows);
-  const [rowModesModel, setRowModesModel] = React.useState({});
-
-  const handleEditClick = (id) => () => {
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
-  };
-
-  const handleSaveClick = (id) => () => {
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-  };
-
-  const handleCancelClick = (id) => () => {
-    setRowModesModel({
-      ...rowModesModel,
-      [id]: { mode: GridRowModes.View, ignoreModifications: true },
-    });
-  };
-
-  const columns = [
-    { field: "name", headerName: "名前", width: 180, editable: false },
-    {
-      field: "age",
-      headerName: "Age",
-      type: "number",
-      width: 80,
-      editable: true,
-    },
-    {
-      field: "actions",
-      type: "actions",
-      headerName: "Actions",
-      width: 100,
-      cellClassName: "actions",
-      getActions: ({ id }) => {
-        const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
-
-        if (isInEditMode) {
-          return [
-            <GridActionsCellItem
-              icon={<SaveIcon />}
-              label="Save"
-              sx={{
-                color: "primary.main",
-              }}
-              onClick={handleSaveClick(id)}
-            />,
-            <GridActionsCellItem
-              icon={<CancelIcon />}
-              label="Cancel"
-              className="textPrimary"
-              onClick={handleCancelClick(id)}
-              color="inherit"
-            />,
-          ];
-        } else {
-          return [
-            <GridActionsCellItem
-              icon={<EditIcon />}
-              label="Edit"
-              className="textPrimary"
-              onClick={handleEditClick(id)}
-              color="inherit"
-            />,
-          ];
+    <main style={{ width: "100%" }}>
+      <Autocomplete
+        label="Autocomplete"
+        options={values.map((value) => {
+          return { id: value.id, label: value.name };
+        })}
+        onSelect={(selectValue) => {
+          const target = values.find(
+            (element) => selectValue.id === element.id
+          );
+          setTargetValue(target);
+        }}
+        placeholder="Search here..."
+      />
+      <Sample
+        overrides={{
+          Sample: { width: "100%" },
+          ...generateFieldSettings(),
+        }}
+      ></Sample>
+      <Button
+        onClick={() =>
+          setOpenDialog((oldValue) => {
+            return { ...oldValue, create: true };
+          })
         }
-      },
-    },
-  ];
-
-  return (
-    <DataGrid
-      rows={rows}
-      columns={columns}
-      editMode="row"
-      rowModesModel={rowModesModel}
-      processRowUpdate={(updatedRow, originalRow) => {
-        console.log(updatedRow);
-        console.log(originalRow);
-        return updatedRow;
-      }}
-      onProcessRowUpdateError={(error) => console.log(error)}
-      autoHeight
-      sx={{ fontSize: "1rem" }}
-    />
+      >
+        create
+      </Button>
+      <Button
+        onClick={() =>
+          setOpenDialog((oldValue) => {
+            return { ...oldValue, update: true };
+          })
+        }
+      >
+        update
+      </Button>
+      <Button
+        onClick={() =>
+          setOpenDialog((oldValue) => {
+            return { ...oldValue, delete: true };
+          })
+        }
+      >
+        delete
+      </Button>
+      <AlertDialog
+        open={openDialog.create}
+        text="データを追加します。よろしいですか？"
+        handleOK={() => {
+          setSnackbar({
+            children: "追加完了しました",
+            severity: "success",
+          });
+          setOpenDialog(initialOpenDialog);
+        }}
+        handleCancel={() => setOpenDialog(initialOpenDialog)}
+      ></AlertDialog>
+      <AlertDialog
+        open={openDialog.update}
+        text="データを更新します。よろしいですか？"
+        handleOK={() => {
+          setSnackbar({
+            children: "更新完了しました",
+            severity: "success",
+          });
+          setOpenDialog(initialOpenDialog);
+        }}
+        handleCancel={() => setOpenDialog(initialOpenDialog)}
+      ></AlertDialog>
+      <AlertDialog
+        open={openDialog.delete}
+        text="データを削除します。よろしいですか？"
+        handleOK={() => {
+          setSnackbar({
+            children: "削除完了しました",
+            severity: "success",
+          });
+          setOpenDialog(initialOpenDialog);
+        }}
+        handleCancel={() => setOpenDialog(initialOpenDialog)}
+      ></AlertDialog>
+      {snackbar && (
+        <Snackbar
+          open
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          onClose={() => setSnackbar(null)}
+          autoHideDuration={6000}
+        >
+          <Alert {...snackbar} />
+        </Snackbar>
+      )}
+      <Example></Example>
+    </main>
   );
 }
 
@@ -356,3 +209,74 @@ function AlertDialog({ open, handleOK, handleCancel, text }) {
     </Dialog>
   );
 }
+
+const data = [
+  {
+    id: "12",
+    firstName: "John",
+    lastName: "Doe",
+    address: "261 Erdman Ford",
+    city: "East Daphne",
+    state: "Kentucky",
+  },
+  {
+    firstName: "Jane",
+    lastName: "Doe",
+    address: "769 Dominic Grove",
+    city: "Columbus",
+    state: "Ohio",
+  },
+  {
+    firstName: "Joe",
+    lastName: "Doe",
+    address: "566 Brakus Inlet",
+    city: "South Linda",
+    state: "West Virginia",
+  },
+  {
+    firstName: "Kevin",
+    lastName: "Vandy",
+    address: "722 Emie Stream",
+    city: "Lincoln",
+    state: "Nebraska",
+  },
+  {
+    firstName: "Joshua",
+    lastName: "Rolluffs",
+    address: "32188 Larkin Turnpike",
+    city: "Charleston",
+    state: "South Carolina",
+  },
+];
+
+const Example = () => {
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "firstName",
+        header: "First Name",
+      },
+      {
+        accessorKey: "lastName",
+        header: "Last Name",
+      },
+    ],
+    [data]
+  );
+
+  const table = useMaterialReactTable({
+    columns,
+    data: data,
+    enableEditing: true,
+    editDisplayMode: "modal",
+    onEditingRowSave: ({ table, values }) => {
+      // idを非表示するとvaluesからidを取得できないので、getStateから取得
+      values["id"] = table.getState().editingRow.original.id;
+      table.setEditingRow(null);
+    },
+  });
+
+  return <MaterialReactTable table={table} />;
+};
+
+export default App;
